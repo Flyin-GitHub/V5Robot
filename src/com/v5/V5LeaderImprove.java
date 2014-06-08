@@ -9,8 +9,8 @@ import java.util.Map;
 
 import robocode.ScannedRobotEvent;
 
-import com.v5.www.robot.team.RobotComparator;
-import com.v5.www.robot.team.RobotInfo;
+import com.v5.team.RobotComparator;
+import com.v5.team.RobotInfo;
 
 /**
  * add shoot leader logic

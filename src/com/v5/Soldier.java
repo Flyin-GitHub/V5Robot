@@ -22,6 +22,7 @@ public class Soldier extends TeamRobot implements Droid {
 	}
 
 	public void onMessageReceived(MessageEvent e) {
+		
 		if (e.getMessage() instanceof Message) {
 			Message message = (Message)e.getMessage();
 			MessageType type = message.getType();
@@ -108,7 +109,7 @@ public class Soldier extends TeamRobot implements Droid {
 	}
 	
 	private void setEventPriority(){
-		setEventPriority("ScannedRobotEvent",	10); //10
+		setEventPriority("MessageEvent",	10); //10
 		setEventPriority("HitWallEvent",		20); //30
 		setEventPriority("BulletHitEvent",		30); //50
 		setEventPriority("BulletHitBulletEvent",40); //50

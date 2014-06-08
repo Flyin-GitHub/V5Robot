@@ -1,7 +1,0 @@
-#Robocode robot team
-#Sun Aug 20 23:26:53 EST 2006
-team.members=com.v5.www.robot.team.TeamLeader,com.v5.www.robot.team.TeamMemberMid,com.v5.www.robot.team.TeamMemberLeft,com.v5.www.robot.team.TeamMemberRight
-team.author.name=Mathew Nelson and Flemming N. Larsen
-robocode.version=1.1.2
-team.webpage=
-team.description=

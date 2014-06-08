@@ -2,7 +2,7 @@ package com.v5.www.robot;
 
 import java.io.Serializable;
 
-import com.v5.www.robot.team.TeamMember.QuadrantType;
+import com.v5.team.TeamMember.QuadrantType;
 
 public class RobotAction implements Serializable{
 	private static final long serialVersionUID = 1L;
