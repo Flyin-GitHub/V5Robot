@@ -1,7 +1,0 @@
-#Robocode V5 team
-#Sun Aug 20 23:26:53 EST 2006
-team.members=com.v5.V5Leader,com.v5.V5Soldier,com.v5.V5Soldier,com.v5.V5Soldier
-team.author.name=Jacky and Felix
-robocode.version=1.0
-team.webpage=
-team.description=\                            A sample team.\n                  MyFirstLeader scans for enemies,\n                  and orders the 4 droids to fire.

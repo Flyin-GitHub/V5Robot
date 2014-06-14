@@ -18,19 +18,13 @@ import com.v5.RobotAction;
 import com.v5.RobotComparator;
 import com.v5.RobotInfo;
 
-
 /**
- * @author V5-team
- *
+ * add shoot leader logic
  */
-public class V5Leader extends AbstractRobot {
+public class V5LeaderFireOne extends AbstractRobot {
 
 	private Map<String, RobotInfo> robotInfoMap = new HashMap<String, RobotInfo>();
 	private List<RobotInfo> robotInfoList = new LinkedList<RobotInfo>();
-
-	private boolean isLeader(double initEnergy) {
-		return initEnergy >= 150;
-	}
 
 	private RobotInfo getRobotInfo(ScannedRobotEvent e) {
 		RobotInfo robot = robotInfoMap.get(e.getName());
@@ -39,7 +33,6 @@ public class V5Leader extends AbstractRobot {
 			robot.setName(e.getName());
 			if (!isTeammate(e.getName())) {
 				robot.setEnemy(true);
-				robot.setEnemyLeader(isLeader(e.getEnergy()));
 			}
 
 			robotInfoList.add(robot);
