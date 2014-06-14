@@ -1,5 +1,6 @@
 package com.v5;
 import robocode.*;
+
 import java.awt.Color;
 import java.awt.geom.*;
 import java.io.*;
@@ -8,17 +9,7 @@ import java.util.*;
 
 
 
-/**
- * ToDo:
- * - otherBot hits Wall, don't dodge
- * - abhängig von FirePower Distance in 1v1 Move1
- * - random distance for CornerJiggle
- */
 
-/******************************************************************************************
- * Ares - a robot by Manfred Schuster
- ******************************************************************************************
- */
 
 public class AbstractRobot extends TeamRobot
 {
@@ -60,6 +51,7 @@ public class AbstractRobot extends TeamRobot
 	long sameDirection = 0;
 	long maxSameDirection = 100;
 
+	@SuppressWarnings("rawtypes")
 	static Hashtable targets = new Hashtable();
 	Enemy target;
 	boolean useAntiGrav = true;
@@ -97,6 +89,7 @@ public class AbstractRobot extends TeamRobot
 	static int WinsType3 = 0;
 	static int WinsType4 = 0;
 
+	@SuppressWarnings("rawtypes")
 	Map bulletsFired = new HashMap(20);
 	int FireType = 2;
 	int OverallFire = 0;
@@ -179,6 +172,7 @@ public class AbstractRobot extends TeamRobot
 	//******************************************************************************************/
 	//  run: Main
 	//******************************************************************************************/
+	@SuppressWarnings("unchecked")
 	public void run() {
 		initBot();
 		GoodBot.Reset();
@@ -234,6 +228,7 @@ public class AbstractRobot extends TeamRobot
 	//******************************************************************************************/
 	// onScannedRobot:  We have a target.  Go get it.
 	//******************************************************************************************/
+	@SuppressWarnings("unchecked")
 	public void myScannedRobot(ScannedRobotEvent e) {
 		Enemy en;
 		if (targets.containsKey(e.getName())) {
@@ -1700,7 +1695,7 @@ public class AbstractRobot extends TeamRobot
 	 */
 	private void setGunPower() {
 		
-		if (Target.getDistance() < 250)
+		if (Target.getDistance() < 1000)
 			gunPower = Math.min(3, getEnergy() - .2);
 		else {
 			if (target.oVo_workingFire > 0 && getOthers() == 1)
