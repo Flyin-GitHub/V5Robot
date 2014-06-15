@@ -76,6 +76,7 @@ public class V5Leader extends AbstractRobot {
 			RobotAction action = new RobotAction();
 			action.setShootPoint(new Point(enemyX, enemyY));
 			action.setFirePower(robot.isEnemyLeader() ? 3 : 1);
+			action.setEvent(e);
 			broadcastMessage(new Message(MessageType.ENEMY_INFO, action));
 		} catch (IOException ex) {
 			out.println("Unable to send order: ");

@@ -1,10 +1,34 @@
 package com.v5;
-import robocode.*;
-
 import java.awt.Color;
-import java.awt.geom.*;
-import java.io.*;
-import java.util.*;
+import java.awt.geom.Point2D;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Hashtable;
+import java.util.Map;
+import java.util.Random;
+
+import robocode.Bullet;
+import robocode.BulletHitBulletEvent;
+import robocode.BulletHitEvent;
+import robocode.BulletMissedEvent;
+import robocode.CustomEvent;
+import robocode.DeathEvent;
+import robocode.HitByBulletEvent;
+import robocode.HitRobotEvent;
+import robocode.HitWallEvent;
+import robocode.MoveCompleteCondition;
+import robocode.RadarTurnCompleteCondition;
+import robocode.RobocodeFileOutputStream;
+import robocode.RobotDeathEvent;
+import robocode.ScannedRobotEvent;
+import robocode.SkippedTurnEvent;
+import robocode.TeamRobot;
+import robocode.TurnCompleteCondition;
+import robocode.WinEvent;
 
 
 
@@ -120,55 +144,7 @@ public class AbstractRobot extends TeamRobot
 	long mustDodgeTime = 0;
 	boolean useDelayedDodge = true;
 	
-	/******************************************************************************************
-	 * enemy information
-	 ******************************************************************************************
-	 */
-	public class Enemy {
-		String name;
-		boolean	live;
-		long		scanTime;
-		double		x,y;
-		double		energy;
-		double		energyDiff;
-		double 	head;
-		double 	headRad;
-		double		bear;
-		double		bearRad;
-		double		absBearRad;
-		double		headDiff;
-		double		velocity;
-		double		velocityA;
-		double		velocityAt;
-		double		velocityB;
-		double		lsVelocityA;
-		double		lsVelocityB;
-		long		lsTime;
-		double		distance;
-		long		lastFireTime;
-		double		lastFireEnergy;
-		boolean	lastFireReplied;
-		long		nextFireTime;
-		long		survivalPoints;
-		long		finalist;
-		long		finalistWinner;
-		long		finalistLooser;
-		double		hitByBulletDamage;
-		double		totalHitByBulletDamage;
-		int		survive;
-		double		wallDistance;
-		double		minWallDistance = 100;
-		long		oVo_battles;
-		int		oVo_workingMove;
-		int		oVo_workingShot;
-		int		oVo_workingFire;
-		long		bulletsHit  [] = new long[6];
-		long		bulletsMiss [] = new long[6];
-		long		bulletsElse [] = new long[6];
-		long		bulletsFired[] = new long[6];
-		long		bulletsBreak[] = new long[6];
-	}
-
+	
 	//******************************************************************************************/
 	//  run: Main
 	//******************************************************************************************/
@@ -182,10 +158,12 @@ public class AbstractRobot extends TeamRobot
 			//setRadar();
 
 			// Move
-			if (getOthers() > 1 || MoveType == 3 && getTime() - target.lastFireTime < 100)
+			if (getOthers() > 0 || MoveType == 3 && getTime() - target.lastFireTime < 100)
 				antiGravMove();
 			else if (Target != null)
 				move();
+			
+			//execute();
 
 			//Gun
 			setGun();
@@ -195,7 +173,7 @@ public class AbstractRobot extends TeamRobot
 			double sqrtSD = Math.sqrt(ScanDistance);
 			if ((MoveType!=4 || !target.lastFireReplied || getTime() - target.lastFireTime > 17) && gunPower > 0 &&
 				/*target.energy > .05 && */gunLoad && getGunHeat() == 0 && (getTime() - ScanTime < 2) &&
-			   (getOthers() != 1 || getTime() - target.lastFireTime < 20 || getEnergy() < target.energy || getEnergy()-3 > target.energy || target.energy == 0 || ScanDistance < 150 || target.lastFireTime == 0) &&
+			   (getOthers() != 0 || getTime() - target.lastFireTime < 20 || getEnergy() < target.energy || getEnergy()-3 > target.energy || target.energy == 0 || ScanDistance < 150 || target.lastFireTime == 0) &&
 			   (absGGTR <= 15/Math.sqrt(ScanDistance) /*gunPower / 20 || ScanDistance < 150 && Math.abs(getGunTurnRemaining()) <= 5*/
 			   || ScanDistance < 50 && absGGTR <= 100/sqrtSD
 			   || ScanDistance < 100 && absGGTR <= 80/sqrtSD
@@ -239,19 +217,10 @@ public class AbstractRobot extends TeamRobot
 			en.name	= e.getName();
 			readBotFile(en);
 		}
-		/*if (en.energy>=0 && en.live==false && en.name != null)
-			out.println("Scanned " + en.name);*/
 		double absBearRad = (getHeadingRadians() + e.getBearingRadians())%(2*PI);
-		long lastScanTime = en.scanTime;
-		//out.println(getTime() - lastScanTime);
+		long lastScanTime = en.scanTime;	
 		en.live			= true;
 		en.headDiff		= normalizeAngle(e.getHeadingRadians() - en.headRad) / (e.getTime() - lastScanTime);
-		/*if (sign(en.velocity) != sign(e.getVelocity())) {
-			if (e.getTime()-en.lastAheadBack<30)
-				en.dirChanges++;
-			en.timeAheadBack = (en.timeAheadBack + e.getTime()-en.lastAheadBack)/2;
-			en.lastAheadBack = e.getTime();
-		}*/
 		en.x				= getX() + Math.sin(absBearRad) * e.getDistance();
 		en.y				= getY() + Math.cos(absBearRad) * e.getDistance();
 		en.scanTime			= e.getTime();
@@ -309,7 +278,8 @@ public class AbstractRobot extends TeamRobot
 						en.lastFireEnergy = otherEnergyDiff;
 						en.nextFireTime = (long)(en.lastFireTime + (1+en.lastFireEnergy/5)/getGunCoolingRate());
 						en.lastFireReplied = false;
-						if (MoveType == 1 && getOthers()==1) {
+						//&& getOthers()==1
+						/*if (MoveType == 1 ) {
 							long dodgeTime = lastScanTime-25 + (long)(ScanDistance/(20-(3*otherEnergyDiff)));
 							if (mustDodgeTime == 0 || dodgeTime < mustDodgeTime)
 								mustDodgeTime = dodgeTime;
@@ -333,7 +303,7 @@ public class AbstractRobot extends TeamRobot
 								sameDirection = sameDirection + 1;
 								mustDodgeTime = 0;
 							}
-						}
+						}*/
 					}
 					//else debug(lastScanTime + ": " + (lastScanTime-en.nextFireTime) + " - " + e.getEnergy());
 				}
@@ -348,7 +318,7 @@ public class AbstractRobot extends TeamRobot
 		//set radar
 		if (enScan.name != null)
 			enScan = (Enemy)targets.get(enScan.name);
-		if (getOthers() > 1 &&
+		if (getOthers() > 0 &&
 			(enScan.name == null ||
 			enScan.name.compareTo(e.getName()) == 0 ||
 			enScan.live == false))
@@ -561,7 +531,7 @@ public class AbstractRobot extends TeamRobot
 			resetTarget("");
 		
 		//now the last enemy
-		if (getOthers() == 1) {
+		/*if (getOthers() == 1) {
 			Enumeration enu = targets.elements();
 			while (enu.hasMoreElements()) {
 				en = (Enemy)enu.nextElement();
@@ -574,7 +544,7 @@ public class AbstractRobot extends TeamRobot
 			
 			if (wallDistance(getX(), getY()) < 60) setToXY(centerX, centerY, (int)wallDistance(getX(), getY()) - 40);
 			else setAhead(0);
-		}
+		}*/
 		
 		// Victory
 		if (getOthers() == 0) {
@@ -965,7 +935,7 @@ public class AbstractRobot extends TeamRobot
 		////////////////////////////setToXY(centerX, centerY, 0);
 		setTurnGunRight(360);
 		setTurnRadarRight(360);
-		if (getOthers() > 1) 
+		if (getOthers() > 0) 
 			maxSameDirection = 3;
 		
 		//if (getRoundNum()>4 && getRoundNum()>getNumRounds()/2 && success<45 && workingMove==0)
@@ -993,7 +963,7 @@ public class AbstractRobot extends TeamRobot
 			double fMove2 = (WinsType2/.60 + bonMove2 - RoundsType2)*1000 + (int)(myScore2/RoundsType2);
 			double fMove3 = (WinsType3/.60 + bonMove3 - RoundsType3)*1000 + (int)(myScore3/RoundsType3);
 			double fMove4 = (WinsType4/.65 + bonMove4 - RoundsType4)*1000 + (int)(myScore4/RoundsType4);
-			if (getOthers() > 1 || (oVo_RamAlways && numOthers==1) ||
+			if (getOthers() > 0 || (oVo_RamAlways && numOthers==1) ||
 				fMove1 >= fMove2 && fMove1 >= fMove3 && fMove1 >= fMove4) {
 				MoveType = 1;
 				RoundsType1++;
@@ -1057,7 +1027,7 @@ public class AbstractRobot extends TeamRobot
 		/*if ((getOthers() == 1 && Target.getEnergy() <  3.8 &&
 			(Target.getEnergy() < .1 || Target.getEnergy() + 100 < getEnergy()) || getEnergy() - target.energy > 50 && getTime()-target.lastFireTime > firstPossibleShoot)
 			||(Target.getEnergy() <= 1 && Target.getEnergy() + 25 < getEnergy() && ramStartTime != 0))*/
-		if ((getOthers() == 1 && (Target.getEnergy() < 3.8 && getEnergy() > 50 || Target.getEnergy() < .1) && getTime()-target.lastFireTime > 5 && getTime() - lastFireTime > 20)
+	/*	if ((getOthers() == 1 && (Target.getEnergy() < 3.8 && getEnergy() > 50 || Target.getEnergy() < .1) && getTime()-target.lastFireTime > 5 && getTime() - lastFireTime > 20)
 			|| ramStartTime < getTime() && Target.getEnergy() <= 10 && Target.getEnergy() + 25 < getEnergy())
 
 			if(ramStartTime == 0) {
@@ -1066,12 +1036,12 @@ public class AbstractRobot extends TeamRobot
 			}
 			else {} //needed
 		else
-			ramStartTime = 0;
+			ramStartTime = 0;*/
 		
 		/** ram **/
 		if (ramStartTime != 0 && ramStartTime < getTime() && ramName.compareTo(Target.getName()) == 0
 			|| oVo_RamAlways && numOthers==1
-			|| getTime() < firstPossibleShoot && getOthers()==1 && Target.getDistance() > 300 && MoveType < 3 && moveToTargetAtRoundStart) {
+			|| getTime() < firstPossibleShoot  && Target.getDistance() > 300 && MoveType < 3 && moveToTargetAtRoundStart) {
 			double Bearing = Target.getBearing();
 			double hisHeading = Target.getHeading();
 			double hisAngel   = Target.getBearing() + getHeading();
@@ -1096,7 +1066,7 @@ public class AbstractRobot extends TeamRobot
 			else if (MoveType == 4)
 				moveType4();
 			/** if near - circle around enemy**/
-			if (ScanDistance <= 80 || getOthers() > 1) {
+			if (ScanDistance <= 80 || getOthers() > 0) {
 				sameDirection = sameDirection + 1;
 				if (TurnSometimes && sameDirection >= maxSameDirection + 5 && ScanDistance > 100) {
 					turnDirection();
@@ -1423,7 +1393,7 @@ public class AbstractRobot extends TeamRobot
 						//nextTurnTime = getTime + (long) (Math.random() * 15 + 10);
 						turnDirection();
 					}
-					setAhead(direction * 300);
+					setAhead(direction * 500);
 					//setTurnRightRadians(bearRad + (PI/2));
 					setTurnRightRadians(avoidWall(bearRad + (PI/2)));
 				}
@@ -1488,12 +1458,12 @@ public class AbstractRobot extends TeamRobot
 		Angel = normalRelativeAngle(Angel);
 		if (Math.abs(Angel) > 90) {
 			setTurnLeft((normalRelativeAngle(Angel + 180)) * (-1) );
-	    	if (getOthers() != 1 || ram || MoveType!=1 || Distance!=0)
+	    	if (getOthers() != 0 || ram || MoveType!=1 || Distance!=0)
 				setBack(Distance);
 		}
 		else {
 			setTurnRight(Angel);
-	    	if (getOthers() != 1 || ram || MoveType!=1 || Distance!=0)
+	    	if (getOthers() != 0 || ram || MoveType!=1 || Distance!=0)
 				setAhead(Distance);
 		}
 		if (Math.abs(getDistanceRemaining()) > 300)
@@ -1589,7 +1559,7 @@ public class AbstractRobot extends TeamRobot
 	 ******************************************************************************************
 	 */
 	private void setRadar() {
-		if (ScanTry --< 1 || getOthers() > 1 &&
+		if (ScanTry --< 1 || getOthers() > 0 &&
 			(getGunHeat() > 5*getGunCoolingRate()
 			|| nearestEnemy(getX(), getY()).distance < 333
 			|| (enScan.name != null && getTime() - enScan.scanTime < 8))) {
@@ -1698,9 +1668,9 @@ public class AbstractRobot extends TeamRobot
 		if (Target.getDistance() < 1000)
 			gunPower = Math.min(3, getEnergy() - .2);
 		else {
-			if (target.oVo_workingFire > 0 && getOthers() == 1)
+			/*if (target.oVo_workingFire > 0 && getOthers() == 1)
 				gunPower = Math.min(target.oVo_workingFire, getEnergy() - .2);
-			else {
+			else {*/
 				if (getEnergy()<=50 && MoveType==1)
 					gunPower = Math.min(Math.max(Math.min(3, 4.3 - Target.getDistance()/200), .1), getEnergy() - .2);
 				else
@@ -1709,14 +1679,14 @@ public class AbstractRobot extends TeamRobot
 					gunPower = Math.max(3, gunPower + (getOthers()-4)/10);
 				if (getEnergy() <= 3)
 					gunPower = Math.min(.1, getEnergy() - .2);
-			}
+		/*	}*/
 		}
 		if (ScanDistance > 200 || target.energy < .1 || ramStartTime < getTime())
-			if (getOthers() == 1 && tryToDisable && !oVo_RamAlways &&
+			/*if (getOthers() == 1 && tryToDisable && !oVo_RamAlways &&
 				(getEnergy() > 50 || getEnergy() > 16 && target.energy < .1) &&
 				(startToDisable - getEnergy() < 3 || startToDisable == 0))
 				gunPower = Math.min(gunPower, getBulletDisablePower(target));			
-			else if (tryToDisable && startToDisable - getEnergy() > 20 && startToDisable != 0) {
+			else*/ if (tryToDisable && startToDisable - getEnergy() > 20 && startToDisable != 0) {
 		        tryToDisable = false;
 		        debug("Disable disabled...");
 		}
@@ -1739,8 +1709,8 @@ public class AbstractRobot extends TeamRobot
 
 		if (oVo_RamAlways)
 			FireType = 1;
-		else if (target.oVo_workingShot > 0 && getOthers() == 1)
-			FireType = target.oVo_workingShot;
+		/*else if (target.oVo_workingShot > 0 && getOthers() == 1)
+			FireType = target.oVo_workingShot;*/
 		else {
 			if (f1 >= f2 && (f1 >= f3  || f3 <= -maxf3) && (f1 >= f4 || f4 <= -maxf4) && ScanTime != 0)
 				FireType = 1;
@@ -1806,7 +1776,7 @@ public class AbstractRobot extends TeamRobot
 	{
 		boolean willHitWall = false;
 		Point2D.Double p = new Point2D.Double(x, y);
-		for (int i = 0; i < 5; i++){
+		for (int i = 0; i < 1; i++){
         	p = circularPos(Target.getTime() + (int)Math.round((getRange(getX(),getY(),p.x,p.y) / (20-(3*gunPower)) )));
 		}
 		if (p.x < target.minWallDistance) {

@@ -2,6 +2,8 @@ package com.v5;
 
 import java.io.Serializable;
 
+import robocode.ScannedRobotEvent;
+
 import com.v5.team.formation.TeamMember.QuadrantType;
 
 public class RobotAction implements Serializable{
@@ -12,6 +14,7 @@ public class RobotAction implements Serializable{
 	private Point movePoint;
 	private Point shootPoint;
 	private int firePower = 1;
+	private ScannedRobotEvent event;
 
 	public QuadrantType getFormationType() {
 		return formationType;
@@ -53,4 +56,14 @@ public class RobotAction implements Serializable{
 	public void setShootPoint(Point shootPoint) {
 		this.shootPoint = shootPoint;
 	}
+
+	public ScannedRobotEvent getEvent() {
+		return event;
+	}
+
+	public void setEvent(ScannedRobotEvent event) {
+		this.event = event;
+	}
+	
+	
 }
