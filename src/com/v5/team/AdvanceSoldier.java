@@ -24,13 +24,14 @@ import com.v5.RobotAction;
 public class AdvanceSoldier extends TeamRobot implements Droid {
 	static double fieldHeight;
 	static double fieldWidth;
-	private static final double PI = 3.14159265d;
-	private Map<String,Enemy> targets = new HashMap<String,Enemy>();
-	private Map<String,Enemy> teammates = new HashMap<String,Enemy>();
-	private String leaderName;
-	private boolean hit = true;
+	protected static final double PI = 3.14159265d;
+	protected Map<String,Enemy> targets = new HashMap<String,Enemy>();
+	protected Map<String,Enemy> teammates = new HashMap<String,Enemy>();
+	protected String leaderName;
+	protected String myLeaderName;
+	protected boolean hit = true;
 	
-	private static final double aheadDistance = 200;
+	protected static final double aheadDistance = 200;
 	
 	
 	protected void init(){
@@ -61,18 +62,13 @@ public class AdvanceSoldier extends TeamRobot implements Droid {
 		if (e.getMessage() instanceof Message) {
 			Message message = (Message) e.getMessage();
 			MessageType type = message.getType();
+			RobotAction action  = (RobotAction)message.getContent();
 			switch (type) {
 			case ENEMY_INFO:
-				RobotAction action  = (RobotAction)message.getContent();
 				updateEnemy(action.getEvent(), action.getShootPoint());
-				/*double dx = action.getShootPoint().getX() - this.getX();
-				double dy = action.getShootPoint().getY() - this.getY();
-				double theta = Math.toDegrees(Math.atan2(dx, dy));
-				if (Utils.getRandom().nextBoolean()) {
-					setTurnRight(Utils.normalRelativeAngleDegrees(theta - getHeading()) + 90);
-				} else {
-					setTurnRight(Utils.normalRelativeAngleDegrees(theta - getHeading()) - 90);
-				}*/
+				break;
+			case TEAMMATE_INFO:
+				updateEnemy(action.getEvent(), action.getShootPoint());
 				break;
 			case HEADER_DIED:
 				break;
@@ -83,7 +79,7 @@ public class AdvanceSoldier extends TeamRobot implements Droid {
 	}
 	
 	
-	private void updateEnemy(ScannedRobotEvent e, Point point){
+	protected void updateEnemy(ScannedRobotEvent e, Point point){
 		Enemy en;
 		if (targets.containsKey(e.getName())) {
 			en = (Enemy)targets.get(e.getName());
@@ -117,13 +113,47 @@ public class AdvanceSoldier extends TeamRobot implements Droid {
 	}
 	
 	
+	protected void updateTeammates(ScannedRobotEvent e, Point point){
+		Enemy en;
+		if (teammates.containsKey(e.getName())) {
+			en = (Enemy)teammates.get(e.getName());
+		} else {
+			en = new Enemy();
+			teammates.put(e.getName(),en);
+			en.name	= e.getName();
+			en.isLeader =  isLeader(e.getEnergy());
+			if(en.isLeader){
+				myLeaderName = e.getName();
+			}
+		}
+		long lastScanTime = en.scanTime;	
+		en.live			= true;
+		en.headDiff		=  normalizeAngle(e.getHeadingRadians() - en.headRad) / (e.getTime() - lastScanTime);
+		en.x				= point.getX();
+		en.y				= point.getY();
+		en.scanTime			= e.getTime();
+		en.energyDiff		= en.energy - e.getEnergy();
+		en.energy			= e.getEnergy();
+		en.head				= e.getHeading();
+		en.headRad			= e.getHeadingRadians();
+		en.bear				= e.getBearing();
+		en.bearRad			= e.getBearingRadians();
+		en.distance			= getRange(getX(), getY(), point.getX(), point.getY());
+		en.wallDistance		= wallDistance(en.x, en.y);
+		if (en.wallDistance < en.minWallDistance) en.minWallDistance = en.wallDistance;
+		en.velocity			= e.getVelocity();
+		en.velocityA		+= en.velocity;
+		en.velocityAt++;	
+	}
+	
+	
 
 	/******************************************************************************************
 	 * normalize radian angel
 	 * @return angel (-PI to PI)
 	 ******************************************************************************************
 	 */
-	private double normalizeAngle( double r ) {
+	protected double normalizeAngle( double r ) {
 		while(r > PI)
 			r -= 2 * PI;
 		while (r <- Math.PI)
@@ -136,7 +166,7 @@ public class AdvanceSoldier extends TeamRobot implements Droid {
 	 * @return distance
 	 ******************************************************************************************
 	 */
-    private double wallDistance(double x, double y) {
+    protected double wallDistance(double x, double y) {
         double distX = Math.min(fieldWidth - x, x);
         double distY = Math.min(fieldHeight - y, y);
         return Math.min(distY,distX);
@@ -147,7 +177,7 @@ public class AdvanceSoldier extends TeamRobot implements Droid {
 	 * @return distance
 	 ******************************************************************************************
 	 */
-	private double getRange(double x1, double y1, double x2, double y2)
+	protected double getRange(double x1, double y1, double x2, double y2)
 	{
 		double xo = x2-x1;
 		double yo = y2-y1;
@@ -155,11 +185,11 @@ public class AdvanceSoldier extends TeamRobot implements Droid {
 		return h;	
 	}
 	
-	private boolean isLeader(double initEnergy) {
+	protected boolean isLeader(double initEnergy) {
 		return initEnergy >= 150;
 	}
 	
-	private void setGun(Enemy enemy) {
+	public void setGun(Enemy enemy) {
 		if (enemy != null) {		
 			if (getEnergy() >= 1)	{
 				double dx = enemy.x - this.getX();
@@ -184,7 +214,7 @@ public class AdvanceSoldier extends TeamRobot implements Droid {
 	}
 	
 	
-	private Enemy getAimTarget(){
+	protected Enemy getAimTarget(){
 		if(targets.containsKey(leaderName)){
 			return targets.get(leaderName);
 		}
@@ -201,7 +231,11 @@ public class AdvanceSoldier extends TeamRobot implements Droid {
 	
 	@Override
 	public void onRobotDeath(RobotDeathEvent e) {
-		targets.remove(e.getName());
+		if(isTeammate(e.getName())){
+			teammates.remove(e.getName());
+		}else{		
+			targets.remove(e.getName());
+		}
 		super.onRobotDeath(e);
 	}
 	
@@ -232,4 +266,6 @@ public class AdvanceSoldier extends TeamRobot implements Droid {
 			hit = hit ? false : true;
 		}
 	}
+	
+	
 }

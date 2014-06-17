@@ -62,11 +62,7 @@ public class V5Leader extends AbstractRobot {
 	}
 
 	public void onScannedRobot(ScannedRobotEvent e) {
-		RobotInfo robot = getRobotInfo(e);
-		if (!isShootRobot(robot)) {
-			return;
-		}
-
+		
 		double enemyBearing = this.getHeading() + e.getBearing();
 		double enemyX = getX() + e.getDistance()
 				* Math.sin(Math.toRadians(enemyBearing));
@@ -75,13 +71,22 @@ public class V5Leader extends AbstractRobot {
 		try {
 			RobotAction action = new RobotAction();
 			action.setShootPoint(new Point(enemyX, enemyY));
-			action.setFirePower(robot.isEnemyLeader() ? 3 : 1);
 			action.setEvent(e);
-			broadcastMessage(new Message(MessageType.ENEMY_INFO, action));
+			if(isTeammate(e.getName())){
+				broadcastMessage(new Message(MessageType.TEAMMATE_INFO, action));
+			}else{
+				broadcastMessage(new Message(MessageType.ENEMY_INFO, action));
+				RobotInfo robot = getRobotInfo(e);
+				action.setFirePower(robot.isEnemyLeader() ? 3 : 1);
+				if (isShootRobot(robot)) {
+					super.onScannedRobot(e);
+				}
+			}
 		} catch (IOException ex) {
 			out.println("Unable to send order: ");
 			ex.printStackTrace(out);
-		}
-		super.onScannedRobot(e);
+		}	
+		
 	}
+
 }

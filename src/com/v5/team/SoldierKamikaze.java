@@ -1,45 +1,28 @@
 package com.v5.team;
 
-import robocode.MessageEvent;
+import java.util.Map;
+
 import robocode.Rules;
 import robocode.util.Utils;
 
-import com.v5.Message;
-import com.v5.MessageType;
-import com.v5.RobotAction;
+import com.v5.Enemy;
 
 /**
  * @author Jacky Cai
  *
  */
-public class SoldierKamikaze extends AbstractSoldier {
+public class SoldierKamikaze extends AdvanceSoldier {
 	
-	public void onMessageReceived(MessageEvent e) {
-		if (e.getMessage() instanceof Message) {
-			Message message = (Message)e.getMessage();
-			MessageType type = message.getType();
-			switch(type){
-				case ENEMY_INFO:
-					RobotAction action = (RobotAction) message.getContent();
-					// Calculate x and y to target
-					double dx = action.getShootPoint().getX() - this.getX();
-					double dy = action.getShootPoint().getY() - this.getY();
-					double theta = Math.toDegrees(Math.atan2(dx, dy));
-					turnGunRight(Utils.normalRelativeAngleDegrees(theta - getGunHeading())+2);
-					fire(action.getFirePower());
-
-					setTurnRight(Utils.normalRelativeAngleDegrees(theta - getHeading()));
-					double moveAway = Math.sqrt(Math.pow(dx, 2)+Math.pow(dy, 2));
-					setMove(theta - getHeading(), moveAway);
-					break;
-				case HEADER_DIED:
-					out.println("HEADER DEID");
-					headerDied = true;
-					break;
-				default:
-					out.println("[No Surrpoted Message Type:] " + type.toString());
-			}			
-		}			
+	public void run (){
+		init();
+		setTurnLeft(getHeading() % 90);
+		while(true){
+			if(targets.containsKey(leaderName) && getName().equals(getKamikazeName())){
+				kamikazeAction();
+			}else{
+				wallsAction();
+			}
+		}
 	}
 	
 	private void setMove(double Angel, double Distance) {
@@ -60,5 +43,51 @@ public class SoldierKamikaze extends AbstractSoldier {
 		while (a <= -180)
 			a += 360;
 		return a;
+	}
+	
+	private void kamikazeAction(){
+		
+		// Calculate x and y to target
+		Enemy enemy = getAimTarget();
+		double dx = enemy.x - this.getX();
+		double dy = enemy.y - this.getY();
+		double theta = Math.toDegrees(Math.atan2(dx, dy));	
+		setTurnRight(Utils.normalRelativeAngleDegrees(theta - getHeading()));
+		double moveAway = Math.sqrt(Math.pow(dx, 2)+Math.pow(dy, 2));
+		setMove(theta - getHeading(), moveAway);
+		setGun(getAimTarget());
+		execute();
+		
+	}
+	
+	private String getKamikazeName(){
+		String kamikaze = null;
+		Enemy enemy = getAimTarget();
+		if(enemy.name.equals(leaderName)){
+			double min = 99999d;
+			for(Map.Entry<String, Enemy> entry : teammates.entrySet()){
+				if(entry.getKey().equals(myLeaderName))
+					break;
+				double distance = getRange(enemy.x, enemy.y, entry.getValue().x, entry.getValue().y);
+				if(distance < min){
+					min = distance;
+					kamikaze = entry.getKey();
+				}
+			}
+		}
+		return kamikaze;
+		
+	}
+	
+	private void wallsAction(){
+		if(hit){	
+			setAhead(aheadDistance);
+		}else{
+			setBack(aheadDistance);
+		}
+		//linerMove();
+		execute();
+		setGun(getAimTarget());	
+		execute();
 	}
 }
